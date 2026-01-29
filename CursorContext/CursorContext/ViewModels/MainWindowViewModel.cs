@@ -9,10 +9,10 @@ namespace CursorContext.ViewModels
         public string Path { get; }
         public string DisplayName { get; }
 
-        public WorkspaceFolderItem(string path)
+        public WorkspaceFolderItem(string path, string? displayName = null)
         {
             Path = path;
-            DisplayName = System.IO.Path.GetFileName(path) ?? path;
+            DisplayName = !string.IsNullOrWhiteSpace(displayName) ? displayName : (System.IO.Path.GetFileName(path) ?? path);
         }
     }
 
@@ -32,8 +32,8 @@ namespace CursorContext.ViewModels
 
         public MainWindowViewModel()
         {
-            foreach (var path in WorkspaceStorageService.GetWorkspaceFolderPaths())
-                WorkspaceFolders.Add(new WorkspaceFolderItem(path));
+            foreach (var entry in WorkspaceStorageService.GetWorkspaceFolderEntries())
+                WorkspaceFolders.Add(new WorkspaceFolderItem(entry.Path, entry.DisplayName));
         }
 
         partial void OnSelectedWorkspaceFolderChanged(WorkspaceFolderItem? value)

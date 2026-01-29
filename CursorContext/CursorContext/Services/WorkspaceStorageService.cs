@@ -5,6 +5,8 @@ using Microsoft.Data.Sqlite;
 
 namespace CursorContext.Services
 {
+    public sealed record WorkspaceFolderEntry(string Path, string DisplayName);
+
     public sealed class ComposerItem
     {
         public string Name { get; }
@@ -23,15 +25,39 @@ namespace CursorContext.Services
             System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
             "Cursor", "User", "workspaceStorage");
 
-        public static IReadOnlyList<string> GetWorkspaceFolderPaths()
+        public static IReadOnlyList<WorkspaceFolderEntry> GetWorkspaceFolderEntries()
         {
             if (!Directory.Exists(WorkspaceStoragePath))
                 return [];
 
             var dirs = Directory.GetDirectories(WorkspaceStoragePath);
-            var result = new List<string>(dirs.Length);
-            foreach (var d in dirs)
-                result.Add(d);
+            var result = new List<WorkspaceFolderEntry>(dirs.Length);
+            foreach (var directoryPath in dirs)
+            {
+                var displayName = Path.GetFileName(directoryPath) ?? directoryPath;
+                var workspaceJsonPath = System.IO.Path.Combine(directoryPath, "workspace.json");
+                if (File.Exists(workspaceJsonPath))
+                {
+                    try
+                    {
+                        var json = File.ReadAllText(workspaceJsonPath);
+                        using var doc = JsonDocument.Parse(json);
+                        if (doc.RootElement.TryGetProperty("folder", out var folderEl))
+                        {
+                            var folder = folderEl.GetString();
+                            if (!string.IsNullOrWhiteSpace(folder) && System.Uri.TryCreate(folder, System.UriKind.Absolute, out var uri))
+                                displayName = uri.LocalPath;
+                            else if (!string.IsNullOrWhiteSpace(folder))
+                                displayName = folder;
+                        }
+                    }
+                    catch
+                    {
+                        // keep directory name as display name
+                    }
+                }
+                result.Add(new WorkspaceFolderEntry(directoryPath, displayName));
+            }
             return result;
         }
 
