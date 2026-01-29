@@ -1,0 +1,58 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CursorContext.ViewModels"
+        xmlns:services="using:CursorContext.Services"
+        xmlns:converters="using:Avalonia.Data.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="CursorContext.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="CursorContext">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,*,2*" Margin="8">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Workspaces" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="0" Grid.Column="1" Text="Composer names" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="0" Grid.Column="2" Text="Conversation" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <ListBox Grid.Row="1" Grid.Column="0"
+                 ItemsSource="{Binding WorkspaceFolders}"
+                 SelectedItem="{Binding SelectedWorkspaceFolder}"
+                 Margin="0,0,4,0">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding DisplayName}"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <ListBox Grid.Row="1" Grid.Column="1"
+                 ItemsSource="{Binding ComposerNames}"
+                 SelectedItem="{Binding SelectedComposer}"
+                 Margin="4,0,4,0">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <ListBox x:Name="ConversationListBox" Grid.Row="1" Grid.Column="2"
+                 ItemsSource="{Binding ConversationTexts}"
+                 Margin="4,0,0,0"
+                 SelectionChanged="OnConversationSelectionChanged">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="services:BubbleItem">
+                    <StackPanel Margin="0,0,0,8">
+                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding ThinkingText}" TextWrapping="Wrap"
+                                   Foreground="Gray"
+                                   IsVisible="{Binding ThinkingText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</Window>

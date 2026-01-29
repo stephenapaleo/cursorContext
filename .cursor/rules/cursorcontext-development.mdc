@@ -1,0 +1,21 @@
+---
+description: CursorContext Avalonia app - structure, conventions, and data sources
+alwaysApply: true
+---
+
+# CursorContext Development
+
+## Project overview
+.NET 8 Avalonia desktop app that reads Cursor IDE workspace and global storage SQLite DBs and displays composer names and bubble conversation data. Main app root: [CursorContext/CursorContext](mdc:CursorContext/CursorContext).
+
+## Structure
+- **Entry / app:** [App.axaml.cs](mdc:CursorContext/CursorContext/App.axaml.cs) sets MainWindow and DataContext. [Program.cs](mdc:CursorContext/CursorContext/Program.cs) is the process entry.
+- **Views:** [Views/MainWindow.axaml](mdc:CursorContext/CursorContext/Views/MainWindow.axaml) (workspaces | composers | conversation). [Views/BubbleDetailWindow.axaml](mdc:CursorContext/CursorContext/Views/BubbleDetailWindow.axaml) shows formatted bubble JSON.
+- **ViewModels:** [ViewModels/MainWindowViewModel.cs](mdc:CursorContext/CursorContext/ViewModels/MainWindowViewModel.cs) uses CommunityToolkit.Mvvm (`[ObservableProperty]`, partial On*Changed). [ViewModelBase.cs](mdc:CursorContext/CursorContext/ViewModels/ViewModelBase.cs) extends `ObservableObject`.
+- **Services:** [Services/WorkspaceStorageService.cs](mdc:CursorContext/CursorContext/Services/WorkspaceStorageService.cs) lists workspace folders and reads per-workspace `state.vscdb` (ItemTable, key `composer.composerData` → allComposers). [Services/GlobalStorageService.cs](mdc:CursorContext/CursorContext/Services/GlobalStorageService.cs) reads global `state.vscdb` (cursorDiskKV): `composerData:<composerId>`, `bubbleId:<composerId>:<bubbleId>` for conversation and bubble JSON.
+
+## Conventions
+- **SQLite:** Open Cursor DBs with `SqliteOpenMode.ReadOnly` and `using` so the IDE is not locked. Use parameterized queries (`$key`).
+- **JSON:** Use `System.Text.Json` (JsonDocument.Parse, TryGetProperty). When displaying raw JSON in UI, format with `JsonSerializerOptions { WriteIndented = true }`.
+- **Environment:** Windows; use PowerShell-friendly commands when scripting. Paths: workspaceStorage and globalStorage under `Environment.GetFolderPath(ApplicationData)\Cursor\User\`.
+- **UI:** Avalonia 11; bindings and `x:DataType` for compiled bindings. Code-behind only for UI events (e.g. opening a window on selection).
