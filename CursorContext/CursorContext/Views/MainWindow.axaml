@@ -15,11 +15,13 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,*,2*" Margin="8">
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="Workspaces" FontWeight="SemiBold" Margin="0,0,0,4"/>
-        <TextBlock Grid.Row="0" Grid.Column="1" Text="Composer names" FontWeight="SemiBold" Margin="0,0,0,4"/>
-        <TextBlock Grid.Row="0" Grid.Column="2" Text="Conversation" FontWeight="SemiBold" Margin="0,0,0,4"/>
-        <ListBox Grid.Row="1" Grid.Column="0"
+    <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,*,2*" Margin="8">
+        <Button Grid.Row="0" Grid.Column="2" Content="Refresh" Command="{Binding RefreshCommand}"
+                HorizontalAlignment="Right" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Workspaces" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" Text="Composer names" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="1" Grid.Column="2" Text="Conversation" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <ListBox Grid.Row="2" Grid.Column="0"
                  ItemsSource="{Binding WorkspaceFolders}"
                  SelectedItem="{Binding SelectedWorkspaceFolder}"
                  Margin="0,0,4,0">
@@ -29,7 +31,7 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <ListBox Grid.Row="1" Grid.Column="1"
+        <ListBox Grid.Row="2" Grid.Column="1"
                  ItemsSource="{Binding ComposerNames}"
                  SelectedItem="{Binding SelectedComposer}"
                  Margin="4,0,4,0">
@@ -39,20 +41,28 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <ListBox x:Name="ConversationListBox" Grid.Row="1" Grid.Column="2"
-                 ItemsSource="{Binding ConversationTexts}"
-                 Margin="4,0,0,0"
-                 SelectionChanged="OnConversationSelectionChanged">
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="services:BubbleItem">
-                    <StackPanel Margin="0,0,0,8">
-                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="0,0,0,4"/>
-                        <TextBlock Text="{Binding ThinkingText}" TextWrapping="Wrap"
-                                   Foreground="Gray"
-                                   IsVisible="{Binding ThinkingText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+        <StackPanel Grid.Row="2" Grid.Column="2" Margin="4,0,0,0" Spacing="6">
+            <Border Padding="8,4" Background="#E8F4F4" CornerRadius="4"
+                    IsVisible="{Binding ContextUsagePercentText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding ContextUsagePercentText}" FontSize="12"/>
+            </Border>
+            <ListBox x:Name="ConversationListBox"
+                     ItemsSource="{Binding ConversationTexts}"
+                     SelectionChanged="OnConversationSelectionChanged">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="services:BubbleItem">
+                        <StackPanel Margin="0,0,0,8">
+                            <TextBlock Text="{Binding ToolFormerName}" TextWrapping="Wrap" Margin="0,0,0,2"
+                                       Foreground="#0D7377"
+                                       IsVisible="{Binding ToolFormerName, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"/>
+                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding ThinkingText}" TextWrapping="Wrap"
+                                       Foreground="Gray"
+                                       IsVisible="{Binding ThinkingText, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </StackPanel>
     </Grid>
 </Window>

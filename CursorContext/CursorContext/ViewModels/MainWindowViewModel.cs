@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CursorContext.Services;
 
 namespace CursorContext.ViewModels
@@ -23,8 +24,13 @@ namespace CursorContext.ViewModels
         private WorkspaceFolderItem? _selectedWorkspaceFolder;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(ConversationTexts))]
+        [NotifyPropertyChangedFor(nameof(ConversationTexts)), NotifyPropertyChangedFor(nameof(ContextUsagePercentText))]
         private ComposerItem? _selectedComposer;
+
+        public string ContextUsagePercentText =>
+            SelectedComposer is null ? "" : GlobalStorageService.GetContextUsagePercent(SelectedComposer.ComposerId) is { } pct
+                ? $"Context usage: {pct:F0}%"
+                : "";
 
         public ObservableCollection<WorkspaceFolderItem> WorkspaceFolders { get; } = [];
         public ObservableCollection<ComposerItem> ComposerNames { get; } = [];
@@ -50,6 +56,26 @@ namespace CursorContext.ViewModels
             if (value is null || string.IsNullOrWhiteSpace(value.ComposerId)) return;
             foreach (var item in GlobalStorageService.GetConversationTexts(value.ComposerId))
                 ConversationTexts.Add(item);
+        }
+
+        [RelayCommand]
+        private void Refresh()
+        {
+            var currentPath = SelectedWorkspaceFolder?.Path;
+            var currentComposerId = SelectedComposer?.ComposerId;
+            WorkspaceFolders.Clear();
+            foreach (var entry in WorkspaceStorageService.GetWorkspaceFolderEntries())
+                WorkspaceFolders.Add(new WorkspaceFolderItem(entry.Path, entry.DisplayName));
+            if (currentPath is not null)
+            {
+                var match = System.Linq.Enumerable.FirstOrDefault(WorkspaceFolders, w => w.Path == currentPath);
+                SelectedWorkspaceFolder = match;
+            }
+            if (currentComposerId is not null && SelectedWorkspaceFolder is not null)
+            {
+                var composerMatch = System.Linq.Enumerable.FirstOrDefault(ComposerNames, c => c.ComposerId == currentComposerId);
+                SelectedComposer = composerMatch;
+            }
         }
     }
 }

@@ -9,13 +9,15 @@ namespace CursorContext.Services
     {
         public string Text { get; }
         public string? ThinkingText { get; }
+        public string? ToolFormerName { get; }
         public string FullJson { get; }
 
-        public BubbleItem(string text, string fullJson, string? thinkingText = null)
+        public BubbleItem(string text, string fullJson, string? thinkingText = null, string? toolFormerName = null)
         {
             Text = text ?? "(no content)";
             FullJson = fullJson ?? "";
             ThinkingText = string.IsNullOrWhiteSpace(thinkingText) ? null : thinkingText;
+            ToolFormerName = string.IsNullOrWhiteSpace(toolFormerName) ? null : toolFormerName;
         }
     }
 
@@ -91,12 +93,22 @@ namespace CursorContext.Services
                                     if (bubbleRoot.TryGetProperty("text", out var textEl))
                                     {
                                         var t = textEl.GetString();
-                                        text = string.IsNullOrWhiteSpace(t) ? "(empty)" : t;
+                                        text = string.IsNullOrWhiteSpace(t) ? "" : t;
                                     }
                                     if (bubbleRoot.TryGetProperty("thinking", out var thinkingEl) && thinkingEl.TryGetProperty("text", out var thinkingTextEl))
                                     {
                                         thinkingText = thinkingTextEl.GetString();
                                     }
+                                    string? toolFormerName = null;
+                                    if (bubbleRoot.TryGetProperty("toolFormerData", out var tfd) && tfd.TryGetProperty("name", out var nameEl))
+                                    {
+                                        toolFormerName = nameEl.GetString();
+                                    }
+                                    var hasOther = !string.IsNullOrWhiteSpace(thinkingText) || !string.IsNullOrWhiteSpace(toolFormerName);
+                                    if (string.IsNullOrWhiteSpace(text) && !hasOther)
+                                        text = "(empty)";
+                                    result.Add(new BubbleItem(text, fullJson, thinkingText, toolFormerName));
+                                    continue;
                                 }
                                 catch
                                 {
@@ -112,6 +124,47 @@ namespace CursorContext.Services
             catch
             {
                 return [];
+            }
+        }
+
+        /// <summary>Gets contextUsagePercent from composerData (allComposers.contextUsagePercent or root).</summary>
+        public static double? GetContextUsagePercent(string composerId)
+        {
+            if (string.IsNullOrWhiteSpace(composerId) || !File.Exists(GlobalStorageDbPath))
+                return null;
+            try
+            {
+                var cs = new SqliteConnectionStringBuilder
+                {
+                    DataSource = GlobalStorageDbPath,
+                    Mode = SqliteOpenMode.ReadOnly
+                }.ToString();
+                using var conn = new SqliteConnection(cs);
+                conn.Open();
+                var composerDataKey = "composerData:" + composerId;
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT value FROM cursorDiskKV WHERE key = $key";
+                cmd.Parameters.AddWithValue("$key", composerDataKey);
+                using var reader = cmd.ExecuteReader();
+                if (!reader.Read())
+                    return null;
+                var composerJson = System.Text.Encoding.UTF8.GetString(reader.GetFieldValue<byte[]>(0));
+                using var doc = JsonDocument.Parse(composerJson);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("allComposers", out var allComposers))
+                {
+                    if (allComposers.ValueKind == JsonValueKind.Object && allComposers.TryGetProperty("contextUsagePercent", out var pctEl) && pctEl.TryGetDouble(out var pct))
+                        return pct;
+                    if (allComposers.ValueKind == JsonValueKind.Array && allComposers.GetArrayLength() > 0 && allComposers[0].TryGetProperty("contextUsagePercent", out var firstPct) && firstPct.TryGetDouble(out var fp))
+                        return fp;
+                }
+                if (root.TryGetProperty("contextUsagePercent", out var rootPct) && rootPct.TryGetDouble(out var rp))
+                    return rp;
+                return null;
+            }
+            catch
+            {
+                return null;
             }
         }
     }
